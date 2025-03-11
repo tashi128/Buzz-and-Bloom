@@ -1,4 +1,4 @@
-#include <stm32f031x6.h>
+/*#include <stm32f031x6.h>
 #include "display.h"
 void initClock(void);
 void initSysTick(void);
@@ -176,8 +176,7 @@ void enablePullUp(GPIO_TypeDef *Port, uint32_t BitNumber)
 }
 void pinMode(GPIO_TypeDef *Port, uint32_t BitNumber, uint32_t Mode)
 {
-	/*
-	*/
+	
 	uint32_t mode_value = Port->MODER;
 	Mode = Mode << (2 * BitNumber);
 	mode_value = mode_value & ~(3u << (BitNumber * 2));
@@ -212,4 +211,225 @@ void setupIO()
 	enablePullUp(GPIOB,5);
 	enablePullUp(GPIOA,11);
 	enablePullUp(GPIOA,8);
+}*/
+
+
+#include <stm32f031x6.h>
+#include "display.h"
+
+void initClock(void);
+void initSysTick(void);
+void SysTick_Handler(void);
+void delay(volatile uint32_t dly);
+void setupIO();
+int isInside(uint16_t x1, uint16_t y1, uint16_t w, uint16_t h, uint16_t px, uint16_t py);
+void enablePullUp(GPIO_TypeDef *Port, uint32_t BitNumber);
+void pinMode(GPIO_TypeDef *Port, uint32_t BitNumber, uint32_t Mode);
+void turnOnLED(GPIO_TypeDef *Port, uint32_t BitNumber);
+void turnOffLED(GPIO_TypeDef *Port, uint32_t BitNumber);
+
+volatile uint32_t milliseconds;
+
+const uint16_t beeUp[] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,40224,0,0,0,0,65535,65535,0,0,0,0,0,0,0,0,40224,0,40224,0,0,65535,65535,65535,0,0,0,0,0,0,0,0,0,0,0,24327,40224,65535,40224,0,0,0,0,0,0,0,0,0,0,0,24327,24327,40224,24327,40224,24327,0,0,0,0,0,0,0,0,0,0,24327,24327,40224,24327,40224,24327,40224,0,0,0,0,0,0,0,0,0,24327,24327,40224,24327,40224,24327,0,0,0,0,0,0,0,0,0,0,0,24327,40224,24327,40224,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+const uint16_t beeDown[] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,40224,0,0,0,0,65535,65535,0,0,0,0,0,0,0,0,40224,0,40224,0,0,65535,65535,65535,0,0,0,0,0,0,0,0,0,0,0,24327,40224,65535,40224,0,0,0,0,0,0,0,0,0,0,0,24327,24327,40224,24327,40224,24327,0,0,0,0,0,0,0,0,0,0,24327,24327,40224,24327,40224,24327,40224,0,0,0,0,0,0,0,0,0,24327,24327,40224,24327,40224,24327,0,0,0,0,0,0,0,0,0,0,0,24327,40224,24327,40224,0,0,0,0,0,0,0,0,0,0,0,0,0,40224,0,40224,0,0,0,0,0,0,0,0,0,0,0,0,40224,0,0,0,40224,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+const uint16_t smileyy[] = {24327,24327,24327,24327,24327,24327,24327,24327,24327,24327,24327,24327,24327,24327,24327,24327,24327,24327,24327,24327,24327,24327,24327,24327,24327,24327,24327,24327,24327,24327,24327,24327,24327,24327,24327,24327,24327,24327,24327,24327,24327,24327,24327,24327,24327,24327,24327,24327,24327,24327,24327,24327,57293,57293,57293,57293,24327,24327,24327,24327,24327,24327,24327,24327,24327,24327,24327,24327,57293,57293,57293,57293,24327,57293,57293,57293,24327,24327,24327,24327,24327,24327,24327,24327,24327,57293,57293,57293,57293,57293,57293,57293,57293,24327,24327,24327,24327,24327,24327,24327,24327,57293,57293,57293,57293,57293,57293,57293,57293,24327,24327,24327,24327,24327,57293,57293,57293,57293,57293,57293,57293,57293,57293,57293,57293,24327,24327,24327,24327,24327,57293,57293,57293,57293,57293,57293,40224,57293,57293,57293,57293,24327,24327,24327,24327,24327,57293,57293,57293,57293,57293,40224,40224,57293,57293,57293,57293,24327,24327,24327,24327,24327,24327,57293,57293,57293,57293,57293,57293,57293,57293,57293,57293,24327,24327,24327,24327,24327,24327,57293,57293,57293,57293,57293,57293,57293,57293,57293,57293,24327,24327,24327,24327,24327,24327,24327,24327,57293,57293,57293,57293,57293,57293,57293,57293,24327,24327,24327,24327,24327,24327,24327,24327,57293,57293,57293,57293,57293,9293,9293,9293,24327,24327,24327,24327,24327,24327,24327,24327,24327,24327,24327,24327,24327,24327,24327,9293,24327,24327,24327,24327,24327,24327,24327,24327,24327,24327,24327,24327,24327,24327,24327,9293,9293,24327,24327};
+
+int main()
+{
+    uint16_t bee_x = 50;
+    uint16_t bee_y = 50;
+    uint16_t flower_x = 100;
+    uint16_t flower_y = 80;
+    uint16_t old_bee_x = bee_x;
+    uint16_t old_flower_x = flower_x;
+    uint16_t old_bee_y = bee_y;
+    uint16_t old_flower_y = flower_y;
+    int beeChasing = 1; // 1 when bee is chasing, 0 when flower is caught
+    int round = 1;
+    int beeWins = 0;
+    int flowerWins = 0;
+    uint32_t startTime;
+
+    initClock();
+    initSysTick();
+    setupIO();
+    
+    // Initialize LEDs
+    pinMode(GPIOA, 0, 1); // Green LED (PA0) as output
+    pinMode(GPIOA, 1, 1); // Red LED (PA1) as output
+    turnOffLED(GPIOA, 0); // Turn off Green LED initially
+    turnOffLED(GPIOA, 1); // Turn off Red LED initially
+
+    while (round <= 3) {
+        bee_x = 50;
+        bee_y = 50;
+        flower_x = 100;
+        flower_y = 80;
+        beeChasing = 1;
+        startTime = milliseconds;
+
+        // Turn on Green LED when the bee is chasing
+        turnOnLED(GPIOA, 0);
+        turnOffLED(GPIOA, 1);
+
+        putImage(flower_x, flower_y, 16, 16, smileyy, 0, 0);
+        putImage(bee_x, bee_y, 12, 16, beeUp, 0, 0);
+
+        while (beeChasing && (milliseconds - startTime) < 30000) {
+            int bee_moved = 0, flower_moved = 0;
+            
+            // Bee movement
+            if ((GPIOB->IDR & (1 << 4)) == 0) bee_x = (bee_x < 110) ? bee_x + 1 : bee_x;
+            if ((GPIOB->IDR & (1 << 5)) == 0) bee_x = (bee_x > 10) ? bee_x - 1 : bee_x;
+            if ((GPIOA->IDR & (1 << 11)) == 0) bee_y = (bee_y < 140) ? bee_y + 1 : bee_y;
+            if ((GPIOA->IDR & (1 << 8)) == 0) bee_y = (bee_y > 16) ? bee_y - 1 : bee_y;
+
+            // Flower movement
+            if ((GPIOB->IDR & (1 << 6)) == 0) flower_x = (flower_x < 110) ? flower_x + 1 : flower_x;
+            if ((GPIOB->IDR & (1 << 7)) == 0) flower_x = (flower_x > 10) ? flower_x - 1 : flower_x;
+            if ((GPIOA->IDR & (1 << 12)) == 0) flower_y = (flower_y < 140) ? flower_y + 1 : flower_y;
+            if ((GPIOA->IDR & (1 << 9)) == 0) flower_y = (flower_y > 16) ? flower_y - 1 : flower_y;
+
+            if ((bee_x != old_bee_x) || (bee_y != old_bee_y)) {
+                fillRectangle(old_bee_x, old_bee_y, 12, 16, 0);
+                old_bee_x = bee_x;
+                old_bee_y = bee_y;
+                putImage(bee_x, bee_y, 12, 16, beeUp, 0, 0);
+            }
+
+            if ((flower_x != old_flower_x) || (flower_y != old_flower_y)) {
+                fillRectangle(old_flower_x, old_flower_y, 16, 16, 0);
+                old_flower_x = flower_x;
+                old_flower_y = flower_y;
+                putImage(flower_x, flower_y, 16, 16, smileyy, 0, 0);
+            }
+
+            // Check if the bee catches the flower
+            if (isInside(flower_x, flower_y, 16, 16, bee_x, bee_y)) {
+                printTextX2("BEE WINS!", 10, 20, RGBToWord(255, 0, 0), 0);
+                turnOnLED(GPIOA, 1); // Turn on Red LED when caught
+                turnOffLED(GPIOA, 0); // Turn off Green LED
+                beeChasing = 0; // Stop movement
+                beeWins++;
+                putImage(bee_x, bee_y, 12, 16, beeDown, 0, 0); // Show beeDown when flower is caught
+            }
+
+            delay(50);
+        }
+
+        if (beeChasing) {
+            printTextX2("FLOWER WINS!", 10, 20, RGBToWord(0, 255, 0), 0);
+            flowerWins++;
+        }
+
+        round++;
+        delay(2000); // Delay before starting the next round
+    }
+
+    // Determine the overall winner after 3 rounds
+    if (beeWins > flowerWins) {
+        printTextX2("BEE WINS THE GAME!", 10, 20, RGBToWord(255, 0, 0), 0);
+    } else if (flowerWins > beeWins) {
+        printTextX2("FLOWER WINS THE GAME!", 10, 20, RGBToWord(0, 255, 0), 0);
+    } else {
+        printTextX2("IT'S A TIE!", 10, 20, RGBToWord(255, 255, 0), 0);
+    }
+
+    while (1); // Infinite loop to keep the game result displayed
+}
+
+void initSysTick(void)
+{
+    SysTick->LOAD = 48000;
+    SysTick->CTRL = 7;
+    SysTick->VAL = 10;
+    __asm(" cpsie i "); // enable interrupts
+}
+
+void SysTick_Handler(void)
+{
+    milliseconds++;
+}
+
+void initClock(void)
+{
+    RCC->CR &= ~(1u<<24);
+    while( (RCC->CR & (1 <<25)));
+
+    FLASH->ACR |= (1 << 0);
+    FLASH->ACR &=~((1u << 2) | (1u<<1));
+    FLASH->ACR |= (1 << 4);
+    RCC->CFGR &= ~((1u<<21) | (1u<<20) | (1u<<19) | (1u<<18));
+    RCC->CFGR |= ((1<<21) | (1<<19) ); 
+    RCC->CFGR |= (1<<14);
+    RCC->CR |= (1<<24);        
+    RCC->CFGR |= (1<<1);
+}
+
+void delay(volatile uint32_t dly)
+{
+    uint32_t end_time = dly + milliseconds;
+    while(milliseconds != end_time)
+        __asm(" wfi "); // sleep
+}
+
+void enablePullUp(GPIO_TypeDef *Port, uint32_t BitNumber)
+{
+    Port->PUPDR = Port->PUPDR &~(3u << BitNumber*2);
+    Port->PUPDR = Port->PUPDR | (1u << BitNumber*2);
+}
+
+void pinMode(GPIO_TypeDef *Port, uint32_t BitNumber, uint32_t Mode)
+{
+    uint32_t mode_value = Port->MODER;
+    Mode = Mode << (2 * BitNumber);
+    mode_value = mode_value & ~(3u << (BitNumber * 2));
+    mode_value = mode_value | Mode;
+    Port->MODER = mode_value;
+}
+
+void turnOnLED(GPIO_TypeDef *Port, uint32_t BitNumber)
+{
+    Port->ODR |= (1 << BitNumber); // Set the bit to turn on the LED
+}
+
+void turnOffLED(GPIO_TypeDef *Port, uint32_t BitNumber)
+{
+    Port->ODR &= ~(1 << BitNumber); // Clear the bit to turn off the LED
+}
+
+int isInside(uint16_t x1, uint16_t y1, uint16_t w, uint16_t h, uint16_t px, uint16_t py)
+{
+    uint16_t x2,y2;
+    x2 = x1+w;
+    y2 = y1+h;
+    int rvalue = 0;
+    if ( (px >= x1) && (px <= x2))
+    {
+        if ( (py >= y1) && (py <= y2))
+            rvalue = 1;
+    }
+    return rvalue;
+}
+
+void setupIO()
+{
+    RCC->AHBENR |= (1 << 18) + (1 << 17); // enable Ports A and B
+    display_begin();
+    pinMode(GPIOB,4,0); // Bee right
+    pinMode(GPIOB,5,0); // Bee left
+    pinMode(GPIOA,8,0); // Bee up
+    pinMode(GPIOA,11,0); // Bee down
+    pinMode(GPIOB,6,0); // Flower right
+    pinMode(GPIOB,7,0); // Flower left
+    pinMode(GPIOA,12,0); // Flower down
+    pinMode(GPIOA,9,0); // Flower up
+    enablePullUp(GPIOB,4);
+    enablePullUp(GPIOB,5);
+    enablePullUp(GPIOA,8);
+    enablePullUp(GPIOA,11);
+    enablePullUp(GPIOB,6);
+    enablePullUp(GPIOB,7);
+    enablePullUp(GPIOA,12);
+    enablePullUp(GPIOA,9);
 }
