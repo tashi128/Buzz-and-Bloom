@@ -332,9 +332,9 @@ int main() {
 
     // Determine the overall winner after 3 rounds
     if (beeWins > flowerWins) {
-        printTextX2("BEE WINS THE GAME!", 10, 20, RGBToWord(255, 0, 0), 0);
+        printTextX2("BEE WINNER!", 10,20, RGBToWord(255, 0, 0), 0);
     } else if (flowerWins > beeWins) {
-        printTextX2("FLOWER WINS THE GAME!", 10, 20, RGBToWord(0, 255, 0), 0);
+        printTextX2("FLOWER WINNER!", 10, 20, RGBToWord(0, 255, 0), 0);
     } else {
         printTextX2("IT'S A TIE!", 10, 20, RGBToWord(255, 255, 0), 0);
     }
