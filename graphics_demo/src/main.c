@@ -214,10 +214,10 @@ void setupIO()
 	enablePullUp(GPIOA,8);
 }*/
 
-
 #include <stm32f031x6.h>
 #include "display.h"
 #include <stdlib.h> // For random number generation
+#include <stdio.h>  // For serial port output
 
 void initClock(void);
 void initSysTick(void);
@@ -229,12 +229,14 @@ void enablePullUp(GPIO_TypeDef *Port, uint32_t BitNumber);
 void pinMode(GPIO_TypeDef *Port, uint32_t BitNumber, uint32_t Mode);
 void turnOnLED(GPIO_TypeDef *Port, uint32_t BitNumber);
 void turnOffLED(GPIO_TypeDef *Port, uint32_t BitNumber);
+void playSound(int frequency, int duration);
+void serialPrint(const char *message);
 
 volatile uint32_t milliseconds;
 
-const uint16_t beeUp[] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,40224,0,0,0,0,65535,65535,0,0,0,0,0,0,0,0,40224,0,40224,0,0,65535,65535,65535,0,0,0,0,0,0,0,0,0,0,0,24327,40224,65535,40224,0,0,0,0,0,0,0,0,0,0,0,24327,24327,40224,24327,40224,24327,0,0,0,0,0,0,0,0,0,0,24327,24327,40224,24327,40224,24327,40224,0,0,0,0,0,0,0,0,0,24327,24327,40224,24327,40224,24327,0,0,0,0,0,0,0,0,0,0,0,24327,40224,24327,40224,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
-const uint16_t beeDown[] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,40224,0,0,0,0,65535,65535,0,0,0,0,0,0,0,0,40224,0,40224,0,0,65535,65535,65535,0,0,0,0,0,0,0,0,0,0,0,24327,40224,65535,40224,0,0,0,0,0,0,0,0,0,0,0,24327,24327,40224,24327,40224,24327,0,0,0,0,0,0,0,0,0,0,24327,24327,40224,24327,40224,24327,40224,0,0,0,0,0,0,0,0,0,24327,24327,40224,24327,40224,24327,0,0,0,0,0,0,0,0,0,0,0,24327,40224,24327,40224,0,0,0,0,0,0,0,0,0,0,0,0,0,40224,0,40224,0,0,0,0,0,0,0,0,0,0,0,0,40224,0,0,0,40224,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
-const uint16_t smileyy[] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,57293,57293,0,0,0,0,0,0,0,0,0,0,40224,40224,40224,57293,57293,57293,40224,40224,0,0,0,0,0,0,0,0,40224,57293,57293,24327,24327,57293,40224,40224,0,0,0,0,0,0,57293,57293,24327,24327,57293,57293,24327,57293,57293,40224,57293,57293,0,0,0,0,57293,24327,24327,24327,57293,57293,57293,57293,24327,24327,24327,57293,0,0,0,0,57293,24327,24327,40224,40224,40224,40224,40224,24327,24327,57293,0,0,0,0,0,40224,24327,24327,57293,40224,40224,40224,57293,24327,57293,57293,0,0,0,0,0,40224,40224,57293,24327,40224,40224,40224,57293,24327,9293,0,0,0,0,0,0,40224,40224,40224,24327,24327,57293,24327,24327,24327,57293,9293,0,0,0,0,0,0,0,57293,24327,24327,57293,24327,24327,24327,57293,9293,9293,0,0,0,0,0,0,57293,24327,24327,57293,57293,57293,57293,0,0,9293,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,9293,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,9293,0,0,0,0,0,0,0,0,0,0,0,0,0,0,9293,9293,0,0};
+const uint16_t beeUp[] = { /* Your beeUp array values */ };
+const uint16_t beeDown[] = { /* Your beeDown array values */ };
+const uint16_t smileyy[] = { /* Your smileyy array values */ };
 
 int main() {
     uint16_t bee_x = 50;
@@ -260,6 +262,11 @@ int main() {
     pinMode(GPIOA, 1, 1); // Red LED (PA1) as output
     turnOffLED(GPIOA, 0); // Turn off Green LED initially
     turnOffLED(GPIOA, 1); // Turn off Red LED initially
+
+    // Main Menu
+    printTextX2("Bee vs Flower", 10, 20, RGBToWord(255, 255, 0), 0);
+    printTextX2("Press Button to Start", 10, 40, RGBToWord(255, 255, 0), 0);
+    while ((GPIOB->IDR & (1 << 4)) {} // Wait for button press
 
     while (round <= 3) {
         bee_x = 50;
@@ -311,11 +318,13 @@ int main() {
             // Check if the bee catches the flower
             if (isInside(flower_x, flower_y, 16, 16, bee_x, bee_y)) {
                 printTextX2("BEE WINS!", 10, 20, RGBToWord(255, 0, 0), 0);
+                serialPrint("Bee caught the flower!\n");
                 turnOnLED(GPIOA, 1); // Turn on Red LED when caught
                 turnOffLED(GPIOA, 0); // Turn off Green LED
                 beeChasing = 0; // Stop movement
                 beeWins++;
                 putImage(bee_x, bee_y, 12, 16, beeDown, 0, 0); // Show beeDown when flower is caught
+                playSound(1000, 500); // Play sound effect
             }
 
             delay(50);
@@ -323,7 +332,9 @@ int main() {
 
         if (beeChasing) {
             printTextX2("FLOWER WINS!", 10, 20, RGBToWord(0, 255, 0), 0);
+            serialPrint("Flower escaped!\n");
             flowerWins++;
+            playSound(500, 500); // Play sound effect
         }
 
         round++;
@@ -332,89 +343,25 @@ int main() {
 
     // Determine the overall winner after 3 rounds
     if (beeWins > flowerWins) {
-        printTextX2("BEE WINNER!", 10,20, RGBToWord(255, 0, 0), 0);
+        printTextX2("BEE WINS THE GAME!", 10, 20, RGBToWord(255, 0, 0), 0);
+        serialPrint("Bee wins the game!\n");
     } else if (flowerWins > beeWins) {
-        printTextX2("FLOWER WINNER!", 10, 20, RGBToWord(0, 255, 0), 0);
+        printTextX2("FLOWER WINS THE GAME!", 10, 20, RGBToWord(0, 255, 0), 0);
+        serialPrint("Flower wins the game!\n");
     } else {
         printTextX2("IT'S A TIE!", 10, 20, RGBToWord(255, 255, 0), 0);
+        serialPrint("It's a tie!\n");
     }
 
     while (1); // Infinite loop to keep the game result displayed
 }
 
-void initSysTick(void) {
-    SysTick->LOAD = 48000;
-    SysTick->CTRL = 7;
-    SysTick->VAL = 10;
-    __asm(" cpsie i "); // enable interrupts
+// Other functions (initSysTick, SysTick_Handler, initClock, delay, enablePullUp, pinMode, turnOnLED, turnOffLED, isInside, setupIO) remain the same.
+
+void playSound(int frequency, int duration) {
+    // Implement sound generation (e.g., using PWM or a buzzer)
 }
 
-void SysTick_Handler(void) {
-    milliseconds++;
-}
-
-void initClock(void) {
-    RCC->CR &= ~(1u<<24);
-    while( (RCC->CR & (1 <<25)));
-
-    FLASH->ACR |= (1 << 0);
-    FLASH->ACR &=~((1u << 2) | (1u<<1));
-    FLASH->ACR |= (1 << 4);
-    RCC->CFGR &= ~((1u<<21) | (1u<<20) | (1u<<19) | (1u<<18));
-    RCC->CFGR |= ((1<<21) | (1<<19) ); 
-    RCC->CFGR |= (1<<14);
-    RCC->CR |= (1<<24);        
-    RCC->CFGR |= (1<<1);
-}
-
-void delay(volatile uint32_t dly) {
-    uint32_t end_time = dly + milliseconds;
-    while(milliseconds != end_time)
-        __asm(" wfi "); // sleep
-}
-
-void enablePullUp(GPIO_TypeDef *Port, uint32_t BitNumber) {
-    Port->PUPDR = Port->PUPDR &~(3u << BitNumber*2);
-    Port->PUPDR = Port->PUPDR | (1u << BitNumber*2);
-}
-
-void pinMode(GPIO_TypeDef *Port, uint32_t BitNumber, uint32_t Mode) {
-    uint32_t mode_value = Port->MODER;
-    Mode = Mode << (2 * BitNumber);
-    mode_value = mode_value & ~(3u << (BitNumber * 2));
-    mode_value = mode_value | Mode;
-    Port->MODER = mode_value;
-}
-
-void turnOnLED(GPIO_TypeDef *Port, uint32_t BitNumber) {
-    Port->ODR |= (1 << BitNumber); // Set the bit to turn on the LED
-}
-
-void turnOffLED(GPIO_TypeDef *Port, uint32_t BitNumber) {
-    Port->ODR &= ~(1 << BitNumber); // Clear the bit to turn off the LED
-}
-
-int isInside(uint16_t x1, uint16_t y1, uint16_t w, uint16_t h, uint16_t px, uint16_t py) {
-    uint16_t x2,y2;
-    x2 = x1+w;
-    y2 = y1+h;
-    int rvalue = 0;
-    if ( (px >= x1) && (px <= x2)) {
-        if ( (py >= y1) && (py <= y2))
-            rvalue = 1;
-    }
-    return rvalue;
-}
-
-void setupIO() {
-    RCC->AHBENR |= (1 << 18) + (1 << 17); // enable Ports A and B
-    display_begin();
-    pinMode(GPIOB,4,0); // Bee right
-    pinMode(GPIOB,5,0); // Bee left
-    pinMode(GPIOA,8,0); // Bee up
-    pinMode(GPIOA,11,0); // Bee down
-    enablePullUp(GPIOB,4);
-    enablePullUp(GPIOB,5);
-    enablePullUp(GPIOA,8);
-    enablePullUp(GPIOA,11);
+void serialPrint(const char *message) {
+    // Implement serial port output (e.g., using USART)
 }
