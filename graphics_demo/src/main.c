@@ -219,7 +219,13 @@ void setupIO()
 #include "display.h"
 #include <stdlib.h>
 
+
+#define CLAMP_X(val) CLAMP(val, 0, 116)  // 128-12=116
+#define CLAMP_Y(val) CLAMP(val, 0, 112)  // 128-16=112
 #define CLAMP(val, min, max) ((val) < (min) ? (min) : ((val) > (max) ? (max) : (val)))
+
+
+
 
 void initClock(void);
 void initSysTick(void);
@@ -229,14 +235,14 @@ void setupIO();
 int isInside(uint16_t x1, uint16_t y1, uint16_t w, uint16_t h, uint16_t px, uint16_t py);
 void enablePullUp(GPIO_TypeDef *Port, uint32_t BitNumber);
 void pinMode(GPIO_TypeDef *Port, uint32_t BitNumber, uint32_t Mode);
-void turnOnLED(GPIO_TypeDef *Port, uint32_t BitNumber);
-void turnOffLED(GPIO_TypeDef *Port, uint32_t BitNumber);
+
+
 
 volatile uint32_t milliseconds;
 
 // Original image arrays
-const uint16_t beeUp[] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,40224,0,0,0,0,65535,65535,0,0,0,0,0,0,0,0,40224,0,40224,0,0,65535,65535,65535,0,0,0,0,0,0,0,0,0,0,0,24327,40224,65535,40224,0,0,0,0,0,0,0,0,0,0,0,24327,24327,40224,24327,40224,24327,0,0,0,0,0,0,0,0,0,0,24327,24327,40224,24327,40224,24327,40224,0,0,0,0,0,0,0,0,0,24327,24327,40224,24327,40224,24327,0,0,0,0,0,0,0,0,0,0,0,24327,40224,24327,40224,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
-const uint16_t beeDown[] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,40224,0,0,0,0,65535,65535,0,0,0,0,0,0,0,0,40224,0,40224,0,0,65535,65535,65535,0,0,0,0,0,0,0,0,0,0,0,24327,40224,65535,40224,0,0,0,0,0,0,0,0,0,0,0,24327,24327,40224,24327,40224,24327,0,0,0,0,0,0,0,0,0,0,24327,24327,40224,24327,40224,24327,40224,0,0,0,0,0,0,0,0,0,24327,24327,40224,24327,40224,24327,0,0,0,0,0,0,0,0,0,0,0,24327,40224,24327,40224,0,0,0,0,0,40224,0,40224,0,0,0,0,0,0,0,0,40224,0,0,0,40224,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+const uint16_t beeUp[] ={0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,65287,65287,65287,0,0,0,0,0,0,0,0,0,0,0,0,0,65287,65287,65287,0,0,0,0,0,0,0,0,0,0,0,65287,0,65287,0,65287,0,65287,0,0,0,0,0,0,0,0,0,65287,0,65287,0,65287,0,65287,53502,0,0,0,0,0,0,0,0,65287,0,65287,0,65287,0,65287,53502,0,0,0,0,0,0,0,0,65287,0,65287,0,65287,0,65287,53502,0,0,0,0,0,0,0,0,65287,0,65287,0,65287,0,65287,53502,0,0,0,0,0,0,0,0,65287,0,65287,0,65287,0,65287,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+const uint16_t beeDown[] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,65287,65287,65287,65287,65287,65287,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,65287,65287,65287,65287,65287,65287,65287,65287,0,0,0,0,0,0,0,0,0,0,0,0,0,0,65287,65287,0,0,0,0,0,0,0,0,65287,65287,65287,65287,65287,65287,65287,65287,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,65287,65287,65287,65287,65287,65287,0,0,0,0,0,0,0,0,0,53502,0,53502,53502,53502,53502,0,53502,0,0,0,0,0,0,0,0,53502,0,0,0,0,0,0,53502,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
 const uint16_t smileyy[] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,57293,57293,0,0,0,0,0,0,0,0,0,0,40224,40224,40224,57293,57293,57293,40224,40224,0,0,0,0,0,0,0,0,40224,57293,57293,24327,24327,57293,40224,40224,0,0,0,0,0,0,57293,57293,24327,24327,57293,57293,24327,57293,57293,40224,57293,57293,0,0,0,0,57293,24327,24327,24327,57293,57293,57293,57293,24327,24327,24327,57293,0,0,0,0,57293,24327,24327,40224,40224,40224,40224,40224,24327,24327,57293,0,0,0,0,0,40224,24327,24327,57293,40224,40224,40224,57293,24327,57293,57293,0,0,0,0,0,40224,40224,57293,24327,40224,40224,40224,57293,24327,9293,0,0,0,0,0,0,40224,40224,40224,24327,24327,57293,24327,24327,24327,57293,9293,0,0,0,0,0,0,0,57293,24327,24327,57293,24327,24327,24327,57293,9293,9293,0,0,0,0,0,0,57293,24327,24327,57293,57293,57293,57293,0,0,9293,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,9293,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,9293,0,0,0,0,0,0,0,0,0,0,0,0,0,0,9293,9293,0,0};
 
 // Menu functions
@@ -252,12 +258,8 @@ int main() {
     initSysTick();
     setupIO();
 
-    // Configure LEDs
-    pinMode(GPIOA, 0, 1);  // Green LED
-    pinMode(GPIOA, 1, 1);  // Red LED
-    turnOffLED(GPIOA, 0);
-    turnOffLED(GPIOA, 1);
 
+    
     // Main game loop
     while(1) {
         // Menu system
@@ -308,51 +310,53 @@ int main() {
             putImage(bee_x, bee_y, 12, 16, beeUp, 0, 0);
 
             // Single round gameplay
-            while(beeChasing && (milliseconds - startTime) < 30000) {
-                // Player 1 (Bee) controls
-                if((GPIOB->IDR & (1 << 4)) == 0) bee_x++;  // Right
-                if((GPIOB->IDR & (1 << 5)) == 0) bee_x--;  // Left
-                if((GPIOA->IDR & (1 << 8)) == 0) bee_y--;  // Up
-                if((GPIOA->IDR & (1 << 11)) == 0) bee_y++; // Down
+        while(beeChasing && (milliseconds - startTime) < 30000) {
+            // Player 1 (Bee) controls - Normal directions
+            if((GPIOB->IDR & (1 << 4)) == 0) bee_x++;  // Right
+            if((GPIOB->IDR & (1 << 5)) == 0) bee_x--;  // Left
+            if((GPIOA->IDR & (1 << 8)) == 0) bee_y--;  // Up
+            if((GPIOA->IDR & (1 << 11)) == 0) bee_y++; // Down
 
-                // Player 2 (Flower) controls
-                if((GPIOB->IDR & (1 << 4)) == 0) flower_x++;  // Share Right
-                if((GPIOB->IDR & (1 << 5)) == 0) flower_x--;  // Share Left
-                if((GPIOA->IDR & (1 << 8)) == 0) flower_y--;  // Share Up
-                if((GPIOA->IDR & (1 << 11)) == 0) flower_y++; // Share Down
+            // Player 2 (Flower) controls - Reverse directions using same buttons
+            if((GPIOB->IDR & (1 << 4)) == 0) flower_x--;  // When Right pressed, move left
+            if((GPIOB->IDR & (1 << 5)) == 0) flower_x++;  // When Left pressed, move right
+            if((GPIOA->IDR & (1 << 8)) == 0) flower_y++;  // When Up pressed, move down
+            if((GPIOA->IDR & (1 << 11)) == 0) flower_y--; // When Down pressed, move up
 
-                // Clamp positions
-                bee_x = CLAMP(bee_x, 10, 118);
-                bee_y = CLAMP(bee_y, 16, 140);
-                flower_x = CLAMP(flower_x, 10, 118);
-                flower_y = CLAMP(flower_y, 16, 140);
+            // Keep both characters on screen
+            bee_x = CLAMP(bee_x, 0, 116);     // 128 - 12 (bee width)
+            bee_y = CLAMP(bee_y, 0, 112);     // 128 - 16 (bee height)
+            flower_x = CLAMP(flower_x, 0, 112); // 128 - 16 (flower size)
+            flower_y = CLAMP(flower_y, 0, 112); // 128 - 16 (flower size)
 
-                // Update positions
-                if(bee_x != old_bee_x || bee_y != old_bee_y) {
-                    fillRectangle(old_bee_x, old_bee_y, 12, 16, 0);
-                    putImage(bee_x, bee_y, 12, 16, beeUp, 0, 0);
-                    old_bee_x = bee_x;
-                    old_bee_y = bee_y;
-                }
+            // Update positions
+            if(bee_x != old_bee_x || bee_y != old_bee_y) {
+                fillRectangle(old_bee_x, old_bee_y, 12, 16, 0);
+                putImage(bee_x, bee_y, 12, 16, beeUp, 0, 0);
+                old_bee_x = bee_x;
+                old_bee_y = bee_y;
+            }
 
-                if(flower_x != old_flower_x || flower_y != old_flower_y) {
-                    fillRectangle(old_flower_x, old_flower_y, 16, 16, 0);
-                    putImage(flower_x, flower_y, 16, 16, smileyy, 0, 0);
-                    old_flower_x = flower_x;
-                    old_flower_y = flower_y;
-                }
+            if(flower_x != old_flower_x || flower_y != old_flower_y) {
+                fillRectangle(old_flower_x, old_flower_y, 16, 16, 0);
+                putImage(flower_x, flower_y, 16, 16, smileyy, 0, 0);
+                old_flower_x = flower_x;
+                old_flower_y = flower_y;
+            }
 
-                // Collision detection
-                if(abs(bee_x - flower_x) < 12 && abs(bee_y - flower_y) < 16) {
-                    printText("BEE WINS!", 10, 20, RGBToWord(255, 0, 0), 0);
-                    turnOnLED(GPIOA, 1);
-                    beeChasing = 0;
-                    beeWins++;
-                    delay(2000);
-                }
+            // Accurate collision detection using bounding boxes
+            if(bee_x < flower_x + 16 && 
+                bee_x + 12 > flower_x && 
+                bee_y < flower_y + 16 && 
+                bee_y + 16 > flower_y) {
+                printText("BEE WINS!", 10, 20, RGBToWord(255, 0, 0), 0);
+                beeChasing = 0;
+                beeWins++;
+                delay(2000);
+            }
 
                 delay(50);
-            }
+        }
 
             if(beeChasing) {
                 printText("FLOWER WINS!", 10, 20, RGBToWord(0, 255, 0), 0);
@@ -455,13 +459,6 @@ void pinMode(GPIO_TypeDef *Port, uint32_t BitNumber, uint32_t Mode) {
     Port->MODER = mode_value;
 }
 
-void turnOnLED(GPIO_TypeDef *Port, uint32_t BitNumber) {
-    Port->ODR |= (1 << BitNumber);
-}
-
-void turnOffLED(GPIO_TypeDef *Port, uint32_t BitNumber) {
-    Port->ODR &= ~(1 << BitNumber);
-}
 
 int isInside(uint16_t x1, uint16_t y1, uint16_t w, uint16_t h, uint16_t px, uint16_t py) {
     uint16_t x2 = x1 + w;
@@ -469,19 +466,33 @@ int isInside(uint16_t x1, uint16_t y1, uint16_t w, uint16_t h, uint16_t px, uint
     return (px >= x1) && (px <= x2) && (py >= y1) && (py <= y2);
 }
 
+
 // ================== HARDWARE SETUP ==================
 void setupIO() {
-    RCC->AHBENR |= (1 << 18) + (1 << 17);
+    RCC->AHBENR |= (1 << 18) | (1 << 17);  // Enable GPIOB and GPIOA
     display_begin();
-    pinMode(GPIOB,4,0);
-    pinMode(GPIOB,5,0);
-    pinMode(GPIOA,8,0);
-    pinMode(GPIOA,11,0);
-    enablePullUp(GPIOB,4);
-    enablePullUp(GPIOB,5);
-    enablePullUp(GPIOA,8);
-    enablePullUp(GPIOA,11);
 
+    // Bee controls
+    pinMode(GPIOB, 4, 0);    // Right
+    pinMode(GPIOB, 5, 0);    // Left
+    pinMode(GPIOA, 8, 0);    // Up
+    pinMode(GPIOA, 11, 0);   // Down
+    
+    // Flower controls (new pins)
+    pinMode(GPIOA, 0, 0);    // Right
+    pinMode(GPIOA, 1, 0);    // Left
+    pinMode(GPIOB, 0, 0);    // Up
+    pinMode(GPIOB, 1, 0);    // Down
+
+    // Enable pull-ups for all buttons
+    enablePullUp(GPIOB, 4);
+    enablePullUp(GPIOB, 5);
+    enablePullUp(GPIOA, 8);
+    enablePullUp(GPIOA, 11);
+    enablePullUp(GPIOA, 0);
+    enablePullUp(GPIOA, 1);
+    enablePullUp(GPIOB, 0);
+    enablePullUp(GPIOB, 1);
 
 }
 
