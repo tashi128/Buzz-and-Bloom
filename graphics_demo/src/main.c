@@ -219,6 +219,8 @@ void setupIO()
 #include "display.h"
 #include <stdlib.h>
 
+#define CLAMP(val, min, max) ((val) < (min) ? (min) : ((val) > (max) ? (max) : (val)))
+
 void initClock(void);
 void initSysTick(void);
 void SysTick_Handler(void);
@@ -241,141 +243,153 @@ const uint16_t smileyy[] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 void showMainMenu(int selectedOption);
 int handleMenuInput(int currentSelection);
 
+
+#define CLAMP(val, min, max) ((val) < (min) ? (min) : ((val) > (max) ? (max) : (val)))
+
 int main() {
+    // System initialization
     initClock();
     initSysTick();
     setupIO();
 
-    // Initialize LEDs
-    pinMode(GPIOA, 0, 1); // Green LED
-    pinMode(GPIOA, 1, 1); // Red LED
+    // Configure LEDs
+    pinMode(GPIOA, 0, 1);  // Green LED
+    pinMode(GPIOA, 1, 1);  // Red LED
     turnOffLED(GPIOA, 0);
     turnOffLED(GPIOA, 1);
 
-    // Main menu variables
-    int menuSelection = 0; // 0: Start Game, 1: Exit
-    int gameRunning = 1;
-
-    // Main menu loop
-    while(gameRunning) {
-        showMainMenu(menuSelection);
-        menuSelection = handleMenuInput(menuSelection);
+    // Main game loop
+    while(1) {
+        // Menu system
+        int menuSelection = 0;
+        int gameActive = 1;
         
-		//Add delay to prevent flickering
-		delay(100);
+        // Menu navigation
+        while(gameActive) {
+            showMainMenu(menuSelection);
+            menuSelection = handleMenuInput(menuSelection);
+            delay(100);
+            
+            if(menuSelection == -1) {  // Start Game
+                fillRectangle(0, 0, 128, 128, 0);
+                gameActive = 0;
+            }
+            else if(menuSelection == -2) {  // Exit
+                fillRectangle(0, 0, 128, 128, 0);
+                printText("Goodbye!", 40, 60, RGBToWord(255, 255, 255), 0);
+                while(1); // Permanent halt
+            }
+        }
 
+        // Game session variables
+        int round = 1;
+        int beeWins = 0;
+        int flowerWins = 0;
+        uint16_t bee_x = 64, bee_y = 64;
+        uint16_t flower_x = 32, flower_y = 96;
+        uint16_t old_bee_x = bee_x, old_bee_y = bee_y;
+        uint16_t old_flower_x = flower_x, old_flower_y = flower_y;
 
-        if(menuSelection == -1) {
-            // Clear screen before starting game
+        // Game rounds loop
+        while(round <= 3) {
+            // Round initialization
             fillRectangle(0, 0, 128, 128, 0);
-            gameRunning = 0;
+            int beeChasing = 1;
+            uint32_t startTime = milliseconds;
+
+            // Reset positions
+            bee_x = 64;
+            bee_y = 64;
+            flower_x = 32;
+            flower_y = 96;
+            
+            // Draw initial positions
+            putImage(flower_x, flower_y, 16, 16, smileyy, 0, 0);
+            putImage(bee_x, bee_y, 12, 16, beeUp, 0, 0);
+
+            // Single round gameplay
+            while(beeChasing && (milliseconds - startTime) < 30000) {
+                // Player 1 (Bee) controls
+                if((GPIOB->IDR & (1 << 4)) == 0) bee_x++;  // Right
+                if((GPIOB->IDR & (1 << 5)) == 0) bee_x--;  // Left
+                if((GPIOA->IDR & (1 << 8)) == 0) bee_y--;  // Up
+                if((GPIOA->IDR & (1 << 11)) == 0) bee_y++; // Down
+
+                // Player 2 (Flower) controls
+                if((GPIOB->IDR & (1 << 4)) == 0) flower_x++;  // Share Right
+                if((GPIOB->IDR & (1 << 5)) == 0) flower_x--;  // Share Left
+                if((GPIOA->IDR & (1 << 8)) == 0) flower_y--;  // Share Up
+                if((GPIOA->IDR & (1 << 11)) == 0) flower_y++; // Share Down
+
+                // Clamp positions
+                bee_x = CLAMP(bee_x, 10, 118);
+                bee_y = CLAMP(bee_y, 16, 140);
+                flower_x = CLAMP(flower_x, 10, 118);
+                flower_y = CLAMP(flower_y, 16, 140);
+
+                // Update positions
+                if(bee_x != old_bee_x || bee_y != old_bee_y) {
+                    fillRectangle(old_bee_x, old_bee_y, 12, 16, 0);
+                    putImage(bee_x, bee_y, 12, 16, beeUp, 0, 0);
+                    old_bee_x = bee_x;
+                    old_bee_y = bee_y;
+                }
+
+                if(flower_x != old_flower_x || flower_y != old_flower_y) {
+                    fillRectangle(old_flower_x, old_flower_y, 16, 16, 0);
+                    putImage(flower_x, flower_y, 16, 16, smileyy, 0, 0);
+                    old_flower_x = flower_x;
+                    old_flower_y = flower_y;
+                }
+
+                // Collision detection
+                if(abs(bee_x - flower_x) < 12 && abs(bee_y - flower_y) < 16) {
+                    printText("BEE WINS!", 10, 20, RGBToWord(255, 0, 0), 0);
+                    turnOnLED(GPIOA, 1);
+                    beeChasing = 0;
+                    beeWins++;
+                    delay(2000);
+                }
+
+                delay(50);
+            }
+
+            if(beeChasing) {
+                printText("FLOWER WINS!", 10, 20, RGBToWord(0, 255, 0), 0);
+                flowerWins++;
+                delay(2000);
+            }
+
+            round++;
         }
-        else if(menuSelection == -2) {
-            fillRectangle(0, 0, 128, 128, 0);
-            printText("Goodbye!", 40, 60, RGBToWord(255, 255, 255), 0);
-            while(1);
+
+        // Final results
+        fillRectangle(0, 0, 128, 128, 0);
+        if(beeWins > flowerWins) {
+            printText("WINNER IS BEE!", 10, 40, RGBToWord(255, 0, 0), 0);
+        } else if(flowerWins > beeWins) {
+            printText("WINNER IS FLOWER!", 10, 40, RGBToWord(0, 255, 0), 0);
+        } else {
+            printText("IT'S A TIE!", 30, 40, RGBToWord(255, 255, 0), 0);
+        }
+        
+        // Restart prompt
+        printText("Press any button", 10, 70, RGBToWord(255, 255, 255), 0);
+        printText("to continue...", 20, 90, RGBToWord(255, 255, 255), 0);
+        
+        // Wait for restart input
+        while(1) {
+            if((GPIOB->IDR & (1 << 4)) == 0 ||
+               (GPIOB->IDR & (1 << 5)) == 0 ||
+               (GPIOA->IDR & (1 << 8)) == 0 ||
+               (GPIOA->IDR & (1 << 11)) == 0) {
+                delay(200);
+                break;
+            }
         }
     }
-
-    // Original game variables
-    uint16_t bee_x = 50;
-    uint16_t bee_y = 50;
-    uint16_t flower_x = 100;
-    uint16_t flower_y = 80;
-    uint16_t old_bee_x = bee_x;
-    uint16_t old_flower_x = flower_x;
-    uint16_t old_bee_y = bee_y;
-    uint16_t old_flower_y = flower_y;
-    int beeChasing = 1;
-    int round = 1;
-    int beeWins = 0;
-    int flowerWins = 0;
-    uint32_t startTime;
-
-    // Modified version
-while (round <= 3) {
-
-		// NEW CLEAR AND RESET
-		fillRectangle(0, 0, 128, 128, 0);
-		bee_x = 50;
-		flower_x = 100;
-		
-		// Existing initialization
-		bee_y = 50;
-		flower_y = 80;
-        beeChasing = 1;
-        startTime = milliseconds;
-
-        turnOnLED(GPIOA, 0);
-        turnOffLED(GPIOA, 1);
-
-        putImage(flower_x, flower_y, 16, 16, smileyy, 0, 0);
-        putImage(bee_x, bee_y, 12, 16, beeUp, 0, 0);
-
-        while (beeChasing && (milliseconds - startTime) < 30000) {
-
-            // Bee movement
-            if ((GPIOB->IDR & (1 << 4)) == 0) bee_x = (bee_x < 110) ? bee_x + 1 : bee_x;
-            if ((GPIOB->IDR & (1 << 5)) == 0) bee_x = (bee_x > 10) ? bee_x - 1 : bee_x;
-            if ((GPIOA->IDR & (1 << 11)) == 0) bee_y = (bee_y < 140) ? bee_y + 1 : bee_y;
-            if ((GPIOA->IDR & (1 << 8)) == 0) bee_y = (bee_y > 16) ? bee_y - 1 : bee_y;
-
-            // Flower movement
-            int flower_move = rand() % 4;
-            switch (flower_move) {
-                case 0: flower_y = (flower_y > 16) ? flower_y - 1 : flower_y; break;
-                case 1: flower_y = (flower_y < 140) ? flower_y + 1 : flower_y; break;
-                case 2: flower_x = (flower_x > 10) ? flower_x - 1 : flower_x; break;
-                case 3: flower_x = (flower_x < 110) ? flower_x + 1 : flower_x; break;
-            }
-
-            if ((bee_x != old_bee_x) || (bee_y != old_bee_y)) {
-                fillRectangle(old_bee_x, old_bee_y, 12, 16, 0);
-                old_bee_x = bee_x;
-                old_bee_y = bee_y;
-                putImage(bee_x, bee_y, 12, 16, beeUp, 0, 0);
-            }
-
-            if ((flower_x != old_flower_x) || (flower_y != old_flower_y)) {
-                fillRectangle(old_flower_x, old_flower_y, 16, 16, 0);
-                old_flower_x = flower_x;
-                old_flower_y = flower_y;
-                putImage(flower_x, flower_y, 16, 16, smileyy, 0, 0);
-            }
-
-            if (isInside(flower_x, flower_y, 16, 16, bee_x, bee_y)) {
-                printTextX2("BEE WINS!", 10, 20, RGBToWord(255, 0, 0), 0);
-                turnOnLED(GPIOA, 1);
-                turnOffLED(GPIOA, 0);
-                beeChasing = 0;
-                beeWins++;
-                putImage(bee_x, bee_y, 12, 16, beeDown, 0, 0);
-            }
-
-            delay(50);
-        }
-
-        if (beeChasing) {
-            printTextX2("FLOWER WINS!", 10, 20, RGBToWord(0, 255, 0), 0);
-            flowerWins++;
-        }
-
-        round++;
-        delay(2000);
-    }
-
-    // Final results
-    fillRectangle(0, 0, 128, 128, 0);
-    if (beeWins > flowerWins) {
-        printTextX2("BEE WINS THE GAME!", 10, 20, RGBToWord(255, 0, 0), 0);
-    } else if (flowerWins > beeWins) {
-        printTextX2("FLOWER WINS THE GAME!", 10, 20, RGBToWord(0, 255, 0), 0);
-    } else {
-        printTextX2("IT'S A TIE!", 10, 20, RGBToWord(255, 255, 0), 0);
-    }
-
-    while(1);
 }
+
 
 
 // ================== SYSTEM INIT FUNCTIONS ==================
@@ -475,7 +489,7 @@ void setupIO() {
 
 	void showMainMenu(int selectedOption) {
     fillRectangle(0, 0, 128, 128, 0);
-    printText("BEE CHASE", 30, 20, RGBToWord(255, 255, 0), 0);
+    printText("BUZZ AND BLOOM", 10, 20, RGBToWord(255, 255, 0), 0);
     
     if(selectedOption == 0) {
         printText("> START GAME", 10, 60, RGBToWord(0, 255, 0), 0);
@@ -510,10 +524,4 @@ int handleMenuInput(int currentSelection) {
 }
 
 
-// Keep all original functions below unchanged
-// (initSysTick, SysTick_Handler, initClock, delay, enablePullUp, 
-// pinMode, turnOnLED, turnOffLED, isInside, setupIO)
-
-// [Rest of your existing functions remain exactly as you originally wrote them]
-// ... Paste all your original functions here without modification ...
 
