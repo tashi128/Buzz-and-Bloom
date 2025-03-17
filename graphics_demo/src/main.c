@@ -179,7 +179,8 @@ int main() {
 
 
 
-// ================== SYSTEM INIT FUNCTIONS ==================
+                             // SYSTEM INIT FUNCTIONS
+
 void initSysTick(void) {
     SysTick->LOAD = 48000;
     SysTick->CTRL = 7;
@@ -222,7 +223,8 @@ void initClock(void) {
 
 
 
-// ================== HELPER FUNCTIONS ==================
+// HELPER FUNCTIONS 
+
 void delay(volatile uint32_t dly) {
     uint32_t end_time = dly + milliseconds;
     while(milliseconds != end_time)
@@ -250,7 +252,8 @@ int isInside(uint16_t x1, uint16_t y1, uint16_t w, uint16_t h, uint16_t px, uint
 }
 
 
-// ================== HARDWARE SETUP ==================
+                          // HARDWARE SETUP
+
 void setupIO() {
     RCC->AHBENR |= (1 << 18) | (1 << 17);  // Enable GPIOB and GPIOA
     display_begin();
@@ -279,7 +282,7 @@ void setupIO() {
 
 }
 
-// ================== MENU FUNCTIONS ==================
+                             // MENU FUNCTIONS
 
 	void showMainMenu(int selectedOption) {
     fillRectangle(0, 0, 128, 128, 0);
